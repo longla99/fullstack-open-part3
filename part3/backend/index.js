@@ -14,6 +14,7 @@ morgan.token('post-data', (req) => {
 
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :post-data'));
 app.use(cors())
+app.use(express.static('dist'))
 
 let persons = [
   { 
@@ -71,7 +72,7 @@ app.post('/api/persons', (req, res) => {
     number
   };
   persons.push(newPerson);
-  res.status(201).json(persons);
+  res.status(201).json(newPerson);
 });
 
 app.delete('/api/persons/:id', (req, res) => {
