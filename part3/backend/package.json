@@ -5,7 +5,9 @@
   "scripts": {
     "start": "node index.js",
     "dev": "node --watch index.js",
-    "test": "echo \\\\\\\"Error: no test specified\\\\\\\" && exit 1"
+    "test": "echo \\\\\\\"Error: no test specified\\\\\\\" && exit 1",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "author": "Long",
   "license": "MIT",
@@ -16,5 +18,11 @@
     "express": "^5.2.1",
     "mongoose": "^9.4.1",
     "morgan": "^1.10.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@stylistic/eslint-plugin": "^5.10.0",
+    "eslint": "^10.2.0",
+    "globals": "^17.5.0"
   }
 }
