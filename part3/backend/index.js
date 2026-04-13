@@ -2,6 +2,11 @@ const express = require('express');
 const morgan = require('morgan')
 const cors = require('cors')
 
+require('dotenv').config()
+
+const Person = require('./models/person')
+
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 
@@ -15,30 +20,6 @@ morgan.token('post-data', (req) => {
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :post-data'));
 app.use(cors())
 app.use(express.static('dist'))
-
-let persons = [
-  { 
-    "id": "1",
-    "name": "Arto Hellas", 
-    "number": "040-123456"
-  },
-  { 
-    "id": "2",
-    "name": "Ada Lovelace", 
-    "number": "39-44-5323523"
-  },
-  { 
-    "id": "3",
-    "name": "Dan Abramov", 
-    "number": "12-43-234345"
-  },
-  { 
-    "id": "4",
-    "name": "Mary Poppendieck", 
-    "number": "39-23-6423122"
-  }
-]
-
 app.use(express.json());
 
 app.get('/', (req, res) => {
@@ -46,48 +27,89 @@ app.get('/', (req, res) => {
 });
 
 app.get('/api/persons', (req, res) => {
-  res.json(persons);
+  Person.find({}).then(result => {
+    res.json(result)
+  })
 });
 
-app.get('/api/persons/:id', (req, res) => {
+app.get('/api/persons/:id', (req, res, next) => {
   const id = req.params.id;
-  const person = persons.find(p => p.id === id);
-  if (!person) {
-    return res.status(404).json({ error: 'Person not found' });
-  }
-  res.json(person);
+  Person.findById(id).then(person => {
+    if (person) {
+      res.json(person);
+    } else {
+      res.status(404).json({ error: 'Person not found' });
+    }
+  }).catch((error) => {
+    next(error);
+  });
 });
 
-app.post('/api/persons', (req, res) => {
+app.post('/api/persons', (req, res, next) => {
   const { name, number } = req.body;
   if (!name || !number) {
     return res.status(400).json({ error: 'Name and number are required' });
   }
-  if (persons.find(p => p.name === name)) {
-    return res.status(400).json({ error: 'Name must be unique' });
-  }
-  const newPerson = {
-    id: (Math.random() * 1000000).toFixed(0),
+  const newPerson = new Person({
     name,
     number
-  };
-  persons.push(newPerson);
-  res.status(201).json(newPerson);
+  });
+  newPerson.save().then(savedPerson => {
+    res.status(201).json(savedPerson);
+  }).catch((error) => {
+    next(error);
+  });
 });
 
-app.delete('/api/persons/:id', (req, res) => {
+app.put('/api/persons/:id', (req, res, next) => {
   const id = req.params.id;
-  const personIndex = persons.findIndex(p => p.id === id);
-  if (personIndex === -1) {
-    return res.status(404).json({ error: 'Person not found' });
+  const { name, number } = req.body;
+  if (!name || !number) {
+    return res.status(400).json({ error: 'Name and number are required' });
   }
-  persons = persons.filter(p => p.id !== id);
-  res.status(204).end();
+  Person.findByIdAndUpdate(id, { name, number }, { returnDocument: 'after', runValidators: true }).then(updatedPerson => {
+    if (updatedPerson) {
+      res.json(updatedPerson);
+    } else {
+      res.status(404).json({ error: 'Person not found' });
+    }
+  }).catch((error) => {
+    next(error);
+  });
 });
 
-app.get('/info', (req, res) => {
-  res.send(`Phonebook has info for 2 people <br> ${new Date()}`);
+app.delete('/api/persons/:id', (req, res, next) => {
+  const id = req.params.id;
+  Person.findByIdAndDelete(id).then(() => {
+    res.status(204).end();
+  }).catch((error) => {
+    next(error);
+  });
 });
+
+app.get('/api/info', (req, res) => {
+  Person.countDocuments({}).then(count => {
+    const info = `Phonebook has info for ${count} people`;
+    const date = new Date();
+    res.send(`${info}<br>${date}`);
+  })
+});
+
+const unknownEndpoint = (req, res) => {
+  res.status(404).send({ error: 'unknown endpoint' });
+}
+
+app.use(unknownEndpoint)
+
+const errorHandler = (error, req, res, next) => {
+  if (error.name === 'CastError') {
+    return res.status(400).send({ error: 'malformatted id' })
+  } else if (error.name === 'ValidationError') {
+    return res.status(400).json({ error: error.message })
+  }
+  next(error)
+}
+app.use(errorHandler)
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
