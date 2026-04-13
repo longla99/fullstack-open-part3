@@ -32,6 +32,14 @@ app.get('/api/persons', (req, res) => {
   })
 })
 
+app.get('/api/persons/info', (req, res) => {
+  Person.countDocuments({}).then(count => {
+    const info = `Phonebook has info for ${count} people`
+    const date = new Date()
+    res.send(`${info}<br>${date}`)
+  })
+})
+
 app.get('/api/persons/:id', (req, res, next) => {
   const id = req.params.id
   Person.findById(id).then(person => {
@@ -84,14 +92,6 @@ app.delete('/api/persons/:id', (req, res, next) => {
     res.status(204).end()
   }).catch((error) => {
     next(error)
-  })
-})
-
-app.get('/api/persons/info', (req, res) => {
-  Person.countDocuments({}).then(count => {
-    const info = `Phonebook has info for ${count} people`
-    const date = new Date()
-    res.send(`${info}<br>${date}`)
   })
 })
 
