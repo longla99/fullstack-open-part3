@@ -87,7 +87,7 @@ app.delete('/api/persons/:id', (req, res, next) => {
   })
 })
 
-app.get('/api/info', (req, res) => {
+app.get('/api/persons/info', (req, res) => {
   Person.countDocuments({}).then(count => {
     const info = `Phonebook has info for ${count} people`
     const date = new Date()
